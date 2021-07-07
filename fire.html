@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html style="padding:0;margin:0;">
+	<body style="padding:0;margin:0;overflow: hidden;">
+		<canvas id="screen"></canvas>
+		<script type="text/javascript" src="slider.js"></script>
+		<script>
+			canvascolor = "rgba(19, 23, 26, 1)";
+			var canvas = document.getElementById('screen');
+			var ctx = canvas.getContext('2d');
+
+			pfps = []
+			var click = false
+			var mouseX = 0;
+			var mouseY = 0;
+			var pause = false;
+			var minsize = 30; //lower number higher minsize
+			var minspacing = 5;
+			var border = 8;
+			const percycle = 1;
+			const theattempts = 3;
+			const attemptincrement = 1;
+
+			canvasResize();
+
+			var left = canvas.width/2 - 300;
+			var topp = canvas.height/2 - 120;
+
+			canvas.addEventListener('mousedown', onClick);
+			canvas.addEventListener("mouseup", onRelease);
+			canvas.addEventListener('mouseleave', onMouseLeave);
+			canvas.addEventListener('mousemove', onMouseMove);
+			document.addEventListener('keydown', (event) => {
+			  const keyName = event.key;
+				switch(keyName){
+					case 'Control':
+						return;
+					case 'm':
+						newdots();
+						if(minsize>=14){
+							minsize-=0.5;
+						}
+						return;
+					case 'n':
+						tweak();
+						return;
+					case ' ':
+						pause = !pause;
+						return;
+				}
+			}, false);
+
+			function getminspacing(){return minspacing;}
+			function setminspacing(setTo){minspacing = setTo;}
+			var minspacingSlider = new Slider("minimum spacing", 6, 0, 20, canvas.width/10, setminspacing, 300, getminspacing, 0)
+			//(name, value, minimum, maximum, containerWidth, updateFunc, container, checkUpdateFunc, roundPlaces)
+			function getminsize(){return minsize;}
+			function setminsize(setTo){minsize = setTo;}
+			var minsizeSlider = new Slider("minimum size", 30, 4, 30, canvas.width/10, setminsize, 300, getminsize, 0)
+			//(name, value, minimum, maximum, containerWidth, updateFunc, container, checkUpdateFunc, roundPlaces)
+
+			function onClick(event){
+				if(canvas.style.cursor == "pointer"){
+					minspacingSlider.clickEvent(event.clientX, event.clientY)
+					minsizeSlider.clickEvent(event.clientX, event.clientY)
+				}else{
+					click = true;
+				}
+			}
+
+			function onRelease(event){
+				click = false;
+				minspacingSlider.releaseEvent()
+				minsizeSlider.releaseEvent()
+
+			}
+
+			function onMouseMove(event){
+			  mouseX = event.pageX;
+			  mouseY = event.pageY;
+				minspacingSlider.mouseMove(mouseX, mouseY)
+				minsizeSlider.mouseMove(mouseX, mouseY)
+			}
+
+			function onMouseLeave(event){
+				click = false;
+			}
+
+			function fillscreen(){
+				ctx.fillStyle = canvascolor;
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+				ctx.font = canvas.width / 30 + "px Arial";
+				if(pause){
+					ctx.font = canvas.width / 80 + "px Arial";
+					ctx.fillStyle = "rgba(255, 245, 120, 1)";
+      		ctx.fillText("paused", 35*canvas.width/40, 19*canvas.height/20);
+				}
+
+				ctx.fillStyle = "rgba(255, 245, 120, 1)";
+				ctx.font = canvas.width / 80 + "px Arial";
+				ctx.fillText("click and hold to do things.", canvas.width/40, 3*canvas.height/40);
+				ctx.fillText("press m to switch mouse modes.", canvas.width/40, 4*canvas.height/40);
+			  ctx.fillText("press space to pause.", canvas.width/40, 5*canvas.height/40);
+				//ctx.fillText("use number keys to change zoom.", canvas.width/50, 8.4*canvas.height/40);
+				minspacingSlider.draw(15*canvas.width/20, canvas.width/100);
+				minsizeSlider.draw(10*canvas.width/20, canvas.width/100);
+
+			}
+
+			function dist(x, y, newx, newy){
+				uhm = (x-newx)*(x-newx)+(y-newy)*(y-newy);
+				uhm = Math.sqrt(uhm);
+				return uhm;
+			}
+
+			class Pfp{
+				constructor(x, y, size){
+					this.x = x;
+					this.y = y;
+					this.size = size;
+					this.color = "green";
+				}
+				calc(i){
+
+				}
+				draw(){
+					var rand = Math.random();
+					if(rand<0.930){
+
+					}else if(rand<0.980){
+						this.color = "green"
+					}else if(rand<0.990){
+						this.color = "yellow"
+					}else if(rand<=1){
+						this.color = "red"
+					}
+
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, 2*Math.PI);
+          ctx.fillStyle = 'blue'
+					ctx.strokeStyle = "red";
+          ctx.fill();
+					ctx.closePath();
+					ctx.stroke();
+
+					ctx.lineWidth = this.size/7;
+					ctx.beginPath();
+					ctx.arc(this.x+0.66*this.size, this.y+0.66*this.size, 0.3*this.size, 0, 2*Math.PI);
+					ctx.fillStyle = this.color;
+					ctx.strokeStyle = "gray";
+					ctx.fill();
+					ctx.closePath();
+					ctx.stroke();
+				}
+			}
+
+			coordx = left+120;
+			coordy = topp+240;
+			ogpfpsize = 80;
+
+			function newdot(){
+				x = left+minspacing+minsize+Math.random()*(600-2*minspacing-2*minsize);
+				y = topp+minspacing+minsize+Math.random()*(240-2*minspacing-2*minsize);
+				if(dist(x, y, coordx, coordy) <= (minspacing + minsize*1.5 + ogpfpsize)){
+					return;
+				}
+				for(var pfp of pfps){
+					if(dist(x,y,pfp.x,pfp.y) <= minspacing+minsize+pfp.size){
+						return;
+					}
+				}
+				test = new Pfp(x, y, minsize);
+				pfps.push(test);
+			}
+
+
+			function newdots(){
+				start = pfps.length;
+				attempts = 0;
+				while(pfps.length<(start+percycle)){
+					newdot();
+					attempts++;
+					if(attempts>200){ //give up after 200 dot attempts
+						return;
+					}
+				}
+				finished = false;
+				attempts = 0;
+				while((finished == false) && (attempts <= theattempts)){
+					finished = true;
+					for(let thispfp of pfps){
+						tooclose = false;
+						if(dist(thispfp.x, thispfp.y, coordx, coordy) <= (minspacing + thispfp.size*1.15 + ogpfpsize*1.15)){ //dont forget the og pfp
+							tooclose = true;
+						} else if((thispfp.x < left + thispfp.size + border)||(thispfp.y < topp + thispfp.size + border)||(thispfp.x > left+600 - thispfp.size - border)||(thispfp.y > topp+240 - thispfp.size - border)){
+							tooclose = true;
+						} else{
+							for(let pfp of pfps){
+								if(thispfp != pfp){
+									if(dist(thispfp.x, thispfp.y, pfp.x, pfp.y) <= (minspacing + thispfp.size*1.15 + pfp.size*1.15)){
+										tooclose = true;
+									}else{
+										finished = false;
+									}
+								}
+							}
+						}
+						if(tooclose == false){
+							thispfp.size+=attemptincrement;
+						}
+					}
+					attempts+=1;
+				}
+			}
+
+			extra = 1;
+
+			function tweak(){
+				xlist = [];
+				ylist = [];
+				for(let thispfp of pfps){
+					distances = [];
+					for(let pfp of pfps){
+						if(thispfp != pfp){
+							distance = dist(thispfp.x, thispfp.y, pfp.x, pfp.y)-thispfp.size*extra-pfp.size*extra;
+							distances.push(distance);
+						} else {
+							distances.push(10000);
+						}
+					}
+					distances.push(thispfp.x - left - thispfp.size*extra-10);
+					distances.push(thispfp.y - topp - thispfp.size*extra-10);
+					distances.push(left+600 - thispfp.x - thispfp.size*extra-10);
+					distances.push(topp+240 - thispfp.y - thispfp.size*extra-10);
+					distances.push(dist(thispfp.x, thispfp.y, coordx, coordy)-thispfp.size*extra-ogpfpsize*extra)
+
+					shortest = Math.min(...distances);
+					shortindex = distances.indexOf(shortest);
+					xy = [];
+					switch(shortindex){
+						case distances.length-5:
+							xy = [1, 0];
+							console.log("1");
+							break;
+						case distances.length-4:
+							xy = [0, 1];
+							console.log("1");
+							break;
+						case distances.length-3:
+							xy = [-1, 0];
+							console.log("1");
+							break;
+						case distances.length-2:
+							xy = [0, -1];
+							console.log("1");
+							break;
+						case distances.length-1:
+							xy = moveaway(x, y, coordx, coordy);
+							console.log("2");
+							break;
+						default:
+							xy = moveaway(x, y, pfps[shortindex].x, pfps[shortindex].y);
+							console.log("default");
+					}
+
+					xlist.push(xy[0]);
+					ylist.push(xy[1]);
+					//thispfp.x+=xy[0];
+					//thispfp.y+=xy[1];
+				}
+				for(var i = 0; i < pfps.length; i++){
+					pfps[i].x+=xlist[i];
+					pfps[i].y+=ylist[i];
+				}
+			}
+			function moveaway(x, y, x2, y2){
+				xydist = [];
+				if(x-x2 == 0){
+					xydist = [1,0]
+				} else if(y-y2 == 0){
+					xydist = [0,1]
+				} else {
+					rise = y-y2;
+					run = x-x2;
+					slope = (y-y2)/(x-x2);
+					xflip = Math.sign(x-x2);
+					yflip = Math.sign(y-y2);
+					if(Math.abs(slope) < 1){
+						xydist.push(xflip*1);
+						xydist.push(xflip*slope);
+					} else {
+						xydist.push(yflip*1/slope);
+						xydist.push(yflip*1);
+					}
+				}
+				return xydist;
+			}
+
+			setInterval(function(){
+
+				fillscreen()
+
+				ctx.fillStyle = "gray";
+				ctx.fillRect(left, topp, 600, 240);
+
+				for(var pfp of pfps){
+					if(pfp.size>=minsize){
+						pfp.draw();
+					}
+				}
+
+			}, 30);
+
+
+			window.onresize = canvasResize;
+			function canvasResize() {
+			  canvas.width  = window.innerWidth;
+			  canvas.height = window.innerHeight;
+			  ctx.fillStyle = '#13171A';
+			  //ctx.fillStyle = canvascolor;
+			  ctx.fillRect(0, 0, canvas.width, canvas.height);
+			}
+
+		</script>
+	</body>
+</html>
