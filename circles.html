@@ -13,7 +13,7 @@
 			var mouseX = 0;
 			var mouseY = 0;
 			var pause = false;
-			var minsize = 30; //lower number higher minsize
+			var minsize = 36; //lower number higher minsize
 			var minspacing = 5;
 			var border = 8;
 			const percycle = 1;
@@ -50,6 +50,23 @@
 						boid();
 						makebig();
 						return;
+					case 'b':
+						i = 0;
+						while(i<50){
+							newdots();
+							makebig();
+							if(minsize>=12){
+								minsize-=0.5;
+							}
+							i++;
+						}
+						j = 0;
+						while(j<30){
+							boid();
+							makebig();
+							j++;
+						}
+						return;
 					case ' ':
 						pause = !pause;
 						return;
@@ -62,7 +79,7 @@
 			//(name, value, minimum, maximum, containerWidth, updateFunc, container, checkUpdateFunc, roundPlaces)
 			function getminsize(){return minsize;}
 			function setminsize(setTo){minsize = setTo;}
-			var minsizeSlider = new Slider("minimum size", 30, 4, 30, canvas.width/10, setminsize, 300, getminsize, 0)
+			var minsizeSlider = new Slider("minimum size", 36, 4, 36, canvas.width/10, setminsize, 300, getminsize, 0)
 			//(name, value, minimum, maximum, containerWidth, updateFunc, container, checkUpdateFunc, roundPlaces)
 
 			function onClick(event){
@@ -107,7 +124,9 @@
 				ctx.font = canvas.width / 80 + "px Arial";
 				ctx.fillText("spam/hold m to create circles.", canvas.width/40, 3*canvas.height/40);
 				ctx.fillText("spam/hold n to correct their spacing.", canvas.width/40, 4*canvas.height/40);
-			  ctx.fillText("spam/hold b to correct their sizing.", canvas.width/40, 5*canvas.height/40);
+			  ctx.fillText("press b to immediately generate a banner.", canvas.width/40, 5*canvas.height/40);
+				ctx.fillText("reload to create a new banner.", canvas.width/40, 6*canvas.height/40);
+
 				//ctx.fillText("use number keys to change zoom.", canvas.width/50, 8.4*canvas.height/40);
 				minspacingSlider.draw(15*canvas.width/20, canvas.width/100);
 				minsizeSlider.draw(10*canvas.width/20, canvas.width/100);
@@ -197,14 +216,14 @@
 					finished = true;
 					for(let thispfp of pfps){
 						tooclose = false;
-						if(dist(thispfp.x, thispfp.y, coordx, coordy) <= (minspacing + thispfp.size*1.15 + ogpfpsize*1.15)){ //dont forget the og pfp
+						if(dist(thispfp.x, thispfp.y, coordx, coordy) <= (minspacing + thispfp.size*1.1 + ogpfpsize*1.1)){ //dont forget the og pfp
 							tooclose = true;
 						} else if((thispfp.x < left + thispfp.size + border)||(thispfp.y < topp + thispfp.size + border)||(thispfp.x > left+600 - thispfp.size - border)||(thispfp.y > topp+240 - thispfp.size - border)){
 							tooclose = true;
 						} else{
 							for(let pfp of pfps){
 								if(thispfp != pfp){
-									if(dist(thispfp.x, thispfp.y, pfp.x, pfp.y) <= (minspacing + thispfp.size*1.15 + pfp.size*1.15)){
+									if(dist(thispfp.x, thispfp.y, pfp.x, pfp.y) <= (minspacing + thispfp.size*1.1 + pfp.size*1.1)){
 										tooclose = true;
 									}else{
 										finished = false;
