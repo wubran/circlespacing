@@ -25,6 +25,11 @@
 			var left = canvas.width/2 - 300;
 			var topp = canvas.height/2 - 120;
 
+			coordx = left+120;
+			coordy = topp+240;
+			ogpfpsize = 80;
+
+
 			canvas.addEventListener('mousedown', onClick);
 			canvas.addEventListener("mouseup", onRelease);
 			canvas.addEventListener('mouseleave', onMouseLeave);
@@ -41,7 +46,7 @@
 						}
 						return;
 					case 'n':
-						tweak();
+						boid();
 						return;
 					case ' ':
 						pause = !pause;
@@ -120,7 +125,7 @@
 					this.size = size;
 					this.color = "green";
 				}
-				calc(i){
+				calc(){
 
 				}
 				draw(){
@@ -155,13 +160,9 @@
 				}
 			}
 
-			coordx = left+120;
-			coordy = topp+240;
-			ogpfpsize = 80;
-
 			function newdot(){
-				x = left+minspacing+minsize+Math.random()*(600-2*minspacing-2*minsize);
-				y = topp+minspacing+minsize+Math.random()*(240-2*minspacing-2*minsize);
+				x = left+2*minspacing+minsize+Math.random()*(600-4*minspacing-2*minsize);
+				y = topp+2*minspacing+minsize+Math.random()*(240-4*minspacing-2*minsize);
 				if(dist(x, y, coordx, coordy) <= (minspacing + minsize*1.5 + ogpfpsize)){
 					return;
 				}
@@ -216,86 +217,52 @@
 
 			extra = 1;
 
-			function tweak(){
+			function boid(){
 				xlist = [];
 				ylist = [];
+
 				for(let thispfp of pfps){
-					distances = [];
+					var avoidx = 0;
+					var avoidy = 0;
 					for(let pfp of pfps){
 						if(thispfp != pfp){
-							distance = dist(thispfp.x, thispfp.y, pfp.x, pfp.y)-thispfp.size*extra-pfp.size*extra;
-							distances.push(distance);
-						} else {
-							distances.push(10000);
+							var thedistance = dist(thispfp.x, thispfp.y, pfp.x, pfp.y);
+							var repel = 1/Math.pow(thedistance - thispfp.size - pfp.size,2);
+							angle = 0;
+							var ydist = thispfp.y-pfp.y;
+							var xdist = thispfp.x-pfp.x;
+							if(ydist >= 0){
+								angle = Math.atan(xdist/ydist);
+							} else {
+								angle = Math.atan(xdist/ydist)+Math.PI;
+							}
+							avoidx = avoidx + repel*Math.sin(angle);
+							avoidy = avoidy + repel*Math.cos(angle);
 						}
 					}
-					distances.push(thispfp.x - left - thispfp.size*extra-10);
-					distances.push(thispfp.y - topp - thispfp.size*extra-10);
-					distances.push(left+600 - thispfp.x - thispfp.size*extra-10);
-					distances.push(topp+240 - thispfp.y - thispfp.size*extra-10);
-					distances.push(dist(thispfp.x, thispfp.y, coordx, coordy)-thispfp.size*extra-ogpfpsize*extra)
-
-					shortest = Math.min(...distances);
-					shortindex = distances.indexOf(shortest);
-					xy = [];
-					switch(shortindex){
-						case distances.length-5:
-							xy = [1, 0];
-							console.log("1");
-							break;
-						case distances.length-4:
-							xy = [0, 1];
-							console.log("1");
-							break;
-						case distances.length-3:
-							xy = [-1, 0];
-							console.log("1");
-							break;
-						case distances.length-2:
-							xy = [0, -1];
-							console.log("1");
-							break;
-						case distances.length-1:
-							xy = moveaway(x, y, coordx, coordy);
-							console.log("2");
-							break;
-						default:
-							xy = moveaway(x, y, pfps[shortindex].x, pfps[shortindex].y);
-							console.log("default");
+					var ydist = thispfp.y-coordy;
+					var xdist = thispfp.x-coordx;
+					if(ydist >= 0){
+						angle = Math.atan(xdist/ydist);
+					} else {
+						angle = Math.atan(xdist/ydist)+Math.PI;
 					}
+					avoidx += Math.sin(angle)/Math.pow(dist(thispfp.x, thispfp.y, coordx, coordy)-thispfp.size*extra-ogpfpsize*extra, 2);
+					avoidy += Math.cos(angle)/Math.pow(dist(thispfp.x, thispfp.y, coordx, coordy)-thispfp.size*extra-ogpfpsize*extra, 2);
 
-					xlist.push(xy[0]);
-					ylist.push(xy[1]);
-					//thispfp.x+=xy[0];
-					//thispfp.y+=xy[1];
+					avoidx += 1/Math.pow(thispfp.x - left - thispfp.size*extra-6, 2);
+					avoidy += 1/Math.pow(thispfp.y - topp - thispfp.size*extra-6, 2);
+					avoidx += -1/Math.pow(left+600 - thispfp.x - thispfp.size*extra-6, 2);
+					avoidy += -1/Math.pow(topp+240 - thispfp.y - thispfp.size*extra-6, 2);
+					xlist.push(avoidx*5);
+					ylist.push(avoidy*5);
 				}
 				for(var i = 0; i < pfps.length; i++){
 					pfps[i].x+=xlist[i];
 					pfps[i].y+=ylist[i];
 				}
 			}
-			function moveaway(x, y, x2, y2){
-				xydist = [];
-				if(x-x2 == 0){
-					xydist = [1,0]
-				} else if(y-y2 == 0){
-					xydist = [0,1]
-				} else {
-					rise = y-y2;
-					run = x-x2;
-					slope = (y-y2)/(x-x2);
-					xflip = Math.sign(x-x2);
-					yflip = Math.sign(y-y2);
-					if(Math.abs(slope) < 1){
-						xydist.push(xflip*1);
-						xydist.push(xflip*slope);
-					} else {
-						xydist.push(yflip*1/slope);
-						xydist.push(yflip*1);
-					}
-				}
-				return xydist;
-			}
+
 
 			setInterval(function(){
 
@@ -303,6 +270,14 @@
 
 				ctx.fillStyle = "gray";
 				ctx.fillRect(left, topp, 600, 240);
+				ctx.lineWidth = 1;
+				ctx.beginPath();
+				ctx.arc(coordx, coordy, ogpfpsize, 0, 2*Math.PI);
+				ctx.fillStyle = ogpfpsize;
+				ctx.strokeStyle = "orange";
+				ctx.fill();
+				ctx.closePath();
+				ctx.stroke();
 
 				for(var pfp of pfps){
 					if(pfp.size>=minsize){
